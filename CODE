@@ -1,0 +1,79 @@
+const int trigPin = 9;
+const int echoPin = 10;
+
+const int ledGreen = 6;  // Safe
+const int ledYellow = 7; // Warning
+const int ledRed = 5;    // Danger
+const int buzzerPin = 8;
+
+long duration;
+float distance;
+
+// Zone limits (in cm)
+const float zoneRed = 10.0;    // <=10 cm → Danger
+const float zoneYellow = 30.0; // 11–30 cm → Warning
+                               // >30 cm → Safe
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  pinMode(ledGreen, OUTPUT);
+  pinMode(ledYellow, OUTPUT);
+  pinMode(ledRed, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Send ultrasonic pulse
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Measure echo duration
+  duration = pulseIn(echoPin, HIGH);
+  distance = (duration * 0.0343) / 2; // convert to cm
+
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // --- Zone detection ---
+  if (distance <= zoneRed && distance > 0) {
+    // Danger zone
+    digitalWrite(ledRed, HIGH);
+    digitalWrite(ledYellow, LOW);
+    digitalWrite(ledGreen, LOW);
+    tone(buzzerPin, 1500); // continuous tone
+  } 
+  else if (distance <= zoneYellow && distance > zoneRed) {
+    // Warning zone
+    digitalWrite(ledRed, LOW);
+    digitalWrite(ledYellow, HIGH);
+    digitalWrite(ledGreen, LOW);
+    tone(buzzerPin, 1000);
+    delay(150);
+    noTone(buzzerPin);
+    delay(150);
+  } 
+  else if (distance > zoneYellow) {
+    // Safe zone
+    digitalWrite(ledRed, LOW);
+    digitalWrite(ledYellow, LOW);
+    digitalWrite(ledGreen, HIGH);
+    noTone(buzzerPin);
+  } 
+  else {
+    // Out of range or no object detected
+    digitalWrite(ledRed, LOW);
+    digitalWrite(ledYellow, LOW);
+    digitalWrite(ledGreen, LOW);
+    noTone(buzzerPin);
+  }
+
+  delay(100);
+}
